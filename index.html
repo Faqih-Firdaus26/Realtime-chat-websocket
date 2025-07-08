@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chat Realtime</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", sans-serif;
+        padding: 0;
+        margin: 0;
+        background-color: #f0f2f5;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+
+      #chat-container {
+        background-color: #97b067;
+        width: 100%;
+        max-width: 600px;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      h2 {
+        text-align: center;
+        color: #2c3e50;
+        margin-bottom: 20px;
+      }
+
+      #usernameInput {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 16px;
+      }
+
+      #messages {
+        height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        background-color: #fafafa;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 15px;
+      }
+
+      .message {
+        margin-bottom: 12px;
+        padding: 8px 10px;
+        background-color: #e8f0fe;
+        border-radius: 6px;
+        font-size: 15px;
+      }
+
+      .message strong {
+        color: #1a73e8;
+      }
+
+      .timestamp {
+        font-size: 0.8em;
+        color: #666;
+        margin-left: 6px;
+      }
+
+      #messageInput {
+        width: calc(100% - 100px);
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 15px;
+      }
+
+      #sendBtn {
+        width: 80px;
+        padding: 10px;
+        border: none;
+        background-color: #1a73e8;
+        color: white;
+        font-weight: bold;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-left: 10px;
+      }
+
+      #sendBtn:hover {
+        background-color: #155ac4;
+      }
+
+      .input-group {
+        display: flex;
+      }
+
+      @media (max-width: 500px) {
+        #messageInput {
+          width: 100%;
+          margin-bottom: 10px;
+        }
+
+        .input-group {
+          flex-direction: column;
+        }
+
+        #sendBtn {
+          width: 100%;
+          margin-left: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="chat-container">
+      <h2>💬 Chat Realtime WebSocket</h2>
+
+      <input
+        type="text"
+        id="usernameInput"
+        placeholder="Masukkan username..."
+      />
+
+      <div id="messages"></div>
+
+      <div class="input-group">
+        <input type="text" id="messageInput" placeholder="Tulis pesan..." />
+        <button id="sendBtn">Kirim</button>
+      </div>
+    </div>
+
+    <script>
+      const socket = new WebSocket("ws://localhost:3000");
+      const messagesDiv = document.getElementById("messages");
+      const messageInput = document.getElementById("messageInput");
+      const usernameInput = document.getElementById("usernameInput");
+      const sendBtn = document.getElementById("sendBtn");
+
+      function getTimeNow() {
+        const now = new Date();
+        return now.toLocaleTimeString();
+      }
+
+      socket.onmessage = async (event) => {
+        let data = event.data;
+
+        if (event.data instanceof Blob) {
+          data = await event.data.text();
+        }
+
+        try {
+          const { username, message, timestamp } = JSON.parse(data);
+
+          const msgDiv = document.createElement("div");
+          msgDiv.className = "message";
+          msgDiv.innerHTML = `<strong>${username}</strong>: ${message} <span class="timestamp">${timestamp}</span>`;
+          messagesDiv.appendChild(msgDiv);
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        } catch (err) {
+          console.error("Format pesan salah:", err);
+        }
+      };
+
+      sendBtn.onclick = () => {
+        const username = usernameInput.value.trim() || "Anonim";
+        const message = messageInput.value.trim();
+
+        if (message) {
+          const payload = {
+            username,
+            message,
+            timestamp: getTimeNow(),
+          };
+
+          socket.send(JSON.stringify(payload));
+          messageInput.value = "";
+        }
+      };
+
+      messageInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") sendBtn.click();
+      });
+    </script>
+  </body>
+</html>
