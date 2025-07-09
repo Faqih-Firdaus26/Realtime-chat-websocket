@@ -3,15 +3,46 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-// Serve index.html
+// Function to get content type
+function getContentType(extname) {
+  switch (extname) {
+    case ".html":
+      return "text/html";
+    case ".css":
+      return "text/css";
+    case ".js":
+      return "text/javascript";
+    case ".json":
+      return "application/json";
+    default:
+      return "text/plain";
+  }
+}
+
+// Serve static files
 const server = http.createServer((req, res) => {
-  const filePath = path.join(__dirname, "index.html");
+  let filePath;
+
+  if (req.url === "/" || req.url === "/index.html") {
+    filePath = path.join(__dirname, "index.html");
+  } else {
+    filePath = path.join(__dirname, req.url);
+  }
+
+  const extname = path.extname(filePath);
+  const contentType = getContentType(extname);
+
   fs.readFile(filePath, (err, data) => {
     if (err) {
-      res.writeHead(500);
-      res.end("Gagal load halaman");
+      if (err.code === "ENOENT") {
+        res.writeHead(404);
+        res.end("File tidak ditemukan");
+      } else {
+        res.writeHead(500);
+        res.end("Server error");
+      }
     } else {
-      res.writeHead(200, { "Content-Type": "text/html" });
+      res.writeHead(200, { "Content-Type": contentType });
       res.end(data);
     }
   });
